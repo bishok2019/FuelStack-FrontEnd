@@ -49,7 +49,7 @@ export default function OrdersPage() {
       {!orders.isLoading && !orders.isError ? (
         <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
           <Table columns={columns} data={rowsOf(orders.data)} onRowDoubleClick={setSelected} />
-          <Pagination page={page} pageSize={pageSize} total={totalOf(orders.data)} meta={orders.data?.meta} onPageChange={setPage} onPageSizeChange={setPageSize} />
+          {orders.data?.meta ? <Pagination page={page} pageSize={pageSize} total={totalOf(orders.data)} meta={orders.data.meta} onPageChange={setPage} onPageSizeChange={setPageSize} /> : null}
         </div>
       ) : null}
       {selected ? (
