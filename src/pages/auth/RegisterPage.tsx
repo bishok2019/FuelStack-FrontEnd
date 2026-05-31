@@ -7,7 +7,7 @@ import { messageOf } from '../../utils/errors';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: '', email: '', password: '' });
+  const [form, setForm] = useState({ full_name: '', username: '', email: '', password: '' });
   const mutation = useMutation({
     mutationFn: register,
     onSuccess: () => navigate('/login'),
@@ -20,6 +20,10 @@ export default function RegisterPage() {
         <h1 className="mt-8 text-2xl font-bold text-slate-950">Create customer account</h1>
         <form className="mt-6 space-y-4" onSubmit={(event) => { event.preventDefault(); mutation.mutate(form); }}>
           <div>
+            <label className="label">Full name</label>
+            <input className="input mt-1" placeholder="Full name" value={form.full_name} onChange={(event) => setForm({ ...form, full_name: event.target.value })} required />
+          </div>
+          <div>
             <label className="label">Username</label>
             <input className="input mt-1" value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} required />
           </div>
@@ -31,7 +35,7 @@ export default function RegisterPage() {
             <label className="label">Password</label>
             <input className="input mt-1" type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required />
           </div>
-          {mutation.isError ? <p className="text-sm text-rose-600">{messageOf(mutation.error, 'Registration failed.')}</p> : null}
+          {mutation.isError ? <p className="text-sm text-rose-600">Registration failed. {messageOf(mutation.error, 'Please try again.')}</p> : null}
           <button className="btn-primary w-full" disabled={mutation.isPending}>
             {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Register

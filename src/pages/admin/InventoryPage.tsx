@@ -67,7 +67,7 @@ export default function InventoryPage() {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="flex h-[calc(100vh-6rem)] flex-col gap-5 overflow-hidden sm:h-[calc(100vh-7rem)]">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-950">Inventory</h1>
@@ -78,9 +78,15 @@ export default function InventoryPage() {
       {inventory.isLoading ? <LoadingState label="Loading inventory" /> : null}
       {inventory.isError ? <ErrorState error={inventory.error} /> : null}
       {!inventory.isLoading && !inventory.isError ? (
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <Table columns={columns} data={rowsOf(inventory.data)} />
-          <Pagination page={page} pageSize={pageSize} total={totalOf(inventory.data)} onPageChange={setPage} onPageSizeChange={setPageSize} />
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <Table
+            columns={columns}
+            data={rowsOf(inventory.data)}
+            containerClassName="min-h-0 flex-1 rounded-none border-0"
+            scrollClassName="h-full overflow-auto"
+            stickyHeader
+          />
+          <Pagination page={page} pageSize={pageSize} total={totalOf(inventory.data)} meta={inventory.data?.meta} onPageChange={setPage} onPageSizeChange={setPageSize} />
         </div>
       ) : null}
       <Modal open={modal} title={editing ? 'Edit inventory record' : 'Add inventory record'} onClose={() => setModal(false)}>

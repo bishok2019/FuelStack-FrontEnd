@@ -26,14 +26,14 @@ export default function CustomersPage() {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="flex h-[calc(100vh-6rem)] flex-col gap-5 overflow-hidden sm:h-[calc(100vh-7rem)]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div><h1 className="text-2xl font-bold text-slate-950">Customers</h1><p className="mt-1 text-sm text-slate-500">Search customers and review their order history.</p></div>
         <div className="relative w-full sm:w-80"><Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input className="input pl-9" placeholder="Search customers" value={search} onChange={(event) => setSearch(event.target.value)} /></div>
       </div>
       {customers.isLoading ? <LoadingState label="Loading customers" /> : null}
       {customers.isError ? <ErrorState error={customers.error} /> : null}
-      {!customers.isLoading && !customers.isError ? <div className="overflow-hidden rounded-lg border border-slate-200 bg-white"><Table columns={columns} data={filtered} /><Pagination page={page} pageSize={pageSize} total={totalOf(customers.data)} onPageChange={setPage} onPageSizeChange={setPageSize} /></div> : null}
+      {!customers.isLoading && !customers.isError ? <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white"><Table columns={columns} data={filtered} containerClassName="min-h-0 flex-1 rounded-none border-0" scrollClassName="h-full overflow-auto" stickyHeader /><Pagination page={page} pageSize={pageSize} total={totalOf(customers.data)} meta={customers.data?.meta} onPageChange={setPage} onPageSizeChange={setPageSize} /></div> : null}
       {selected ? (
         <div className="fixed inset-0 z-40 bg-slate-950/30" onClick={() => setSelected(null)}>
           <aside className="ml-auto h-full w-full max-w-lg overflow-y-auto bg-white p-5 shadow-soft" onClick={(event) => event.stopPropagation()}>

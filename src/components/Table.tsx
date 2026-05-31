@@ -14,6 +14,9 @@ type TableProps = {
   onRowClick?: (row: Row) => void;
   onRowDoubleClick?: (row: Row) => void;
   empty?: string;
+  containerClassName?: string;
+  scrollClassName?: string;
+  stickyHeader?: boolean;
 };
 
 function renderValue(value: any): ReactNode {
@@ -27,14 +30,24 @@ function renderValue(value: any): ReactNode {
   return String(value);
 }
 
-export default function Table({ columns, data = [], rowKey = 'id', onRowClick, onRowDoubleClick, empty = 'No records found.' }: TableProps) {
+export default function Table({
+  columns,
+  data = [],
+  rowKey = 'id',
+  onRowClick,
+  onRowDoubleClick,
+  empty = 'No records found.',
+  containerClassName = '',
+  scrollClassName = 'overflow-x-auto',
+  stickyHeader = false,
+}: TableProps) {
   const isInteractive = onRowClick || onRowDoubleClick;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-      <div className="overflow-x-auto">
+    <div className={`overflow-hidden rounded-lg border border-slate-200 bg-white ${containerClassName}`}>
+      <div className={scrollClassName}>
         <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50">
+          <thead className={`${stickyHeader ? 'sticky top-0 z-10' : ''} bg-slate-50`}>
             <tr>
               {columns.map((column) => (
                 <th key={column.key} className="px-4 py-3 text-left font-semibold text-slate-600">

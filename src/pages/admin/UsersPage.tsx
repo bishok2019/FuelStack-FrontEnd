@@ -38,14 +38,14 @@ export default function UsersPage() {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="flex h-[calc(100vh-6rem)] flex-col gap-5 overflow-hidden sm:h-[calc(100vh-7rem)]">
       <div className="flex items-center justify-between gap-4">
         <div><h1 className="text-2xl font-bold text-slate-950">Users</h1><p className="mt-1 text-sm text-slate-500">Manage system users and access flags.</p></div>
         <button className="btn-primary" onClick={() => setModal(true)}><Plus className="h-4 w-4" /> Add user</button>
       </div>
       {users.isLoading ? <LoadingState label="Loading users" /> : null}
       {users.isError ? <ErrorState error={users.error} /> : null}
-      {!users.isLoading && !users.isError ? <div className="overflow-hidden rounded-lg border border-slate-200 bg-white"><Table columns={columns} data={rowsOf(users.data)} /><Pagination page={page} pageSize={pageSize} total={totalOf(users.data)} onPageChange={setPage} onPageSizeChange={setPageSize} /></div> : null}
+      {!users.isLoading && !users.isError ? <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white"><Table columns={columns} data={rowsOf(users.data)} containerClassName="min-h-0 flex-1 rounded-none border-0" scrollClassName="h-full overflow-auto" stickyHeader /><Pagination page={page} pageSize={pageSize} total={totalOf(users.data)} meta={users.data?.meta} onPageChange={setPage} onPageSizeChange={setPageSize} /></div> : null}
       <Modal open={modal} title="Add system user" onClose={() => setModal(false)}>
         <form className="space-y-4" onSubmit={save}>
           <div className="grid gap-4 sm:grid-cols-2">

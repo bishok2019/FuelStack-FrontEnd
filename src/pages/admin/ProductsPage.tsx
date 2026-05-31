@@ -55,7 +55,7 @@ export default function ProductsPage() {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="flex h-[calc(100vh-6rem)] flex-col gap-5 overflow-hidden sm:h-[calc(100vh-7rem)]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-950">Products</h1>
@@ -72,9 +72,15 @@ export default function ProductsPage() {
       {products.isLoading ? <LoadingState label="Loading products" /> : null}
       {products.isError ? <ErrorState error={products.error} /> : null}
       {!products.isLoading && !products.isError ? (
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <Table columns={columns} data={rowsOf(products.data)} />
-          <Pagination page={page} pageSize={pageSize} total={totalOf(products.data)} onPageChange={setPage} onPageSizeChange={setPageSize} />
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <Table
+            columns={columns}
+            data={rowsOf(products.data)}
+            containerClassName="min-h-0 flex-1 rounded-none border-0"
+            scrollClassName="h-full overflow-auto"
+            stickyHeader
+          />
+          <Pagination page={page} pageSize={pageSize} total={totalOf(products.data)} meta={products.data?.meta} onPageChange={setPage} onPageSizeChange={setPageSize} />
         </div>
       ) : null}
       <Modal open={modal} title={editing ? 'Edit product' : 'Add product'} onClose={() => setModal(false)}>
