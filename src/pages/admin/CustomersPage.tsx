@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Search, X } from 'lucide-react';
 import ErrorState from '../../components/ErrorState';
 import LoadingState from '../../components/LoadingState';
@@ -6,17 +6,44 @@ import Pagination from '../../components/Pagination';
 import Table from '../../components/Table';
 import { useCustomers } from '../../hooks/useCustomers';
 import { useOrders } from '../../hooks/useOrders';
+import { useUsers } from '../../hooks/useUsers';
 import usePaginationParams from '../../hooks/usePaginationParams';
 import { currency, nameOf, orderTotal, rowsOf, statusOf, totalOf } from '../../utils/data';
+import { booleanParam, cleanParams } from '../../utils/query';
 import Badge from '../../components/Badge';
+
+const initialFilters = { search: '', user_id: '', is_active: '' };
 
 export default function CustomersPage() {
   const { page, pageSize, setPage, setPageSize } = usePaginationParams();
-  const [search, setSearch] = useState('');
+  const [draftFilters, setDraftFilters] = useState(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState(initialFilters);
+  const [userOptionsEnabled, setUserOptionsEnabled] = useState(false);
   const [selected, setSelected] = useState(null);
-  const customers = useCustomers({ page, page_size: pageSize, search: search || undefined });
-  const orders = useOrders({ customer_id: selected?.id, page: 1, page_size: 10 });
-  const filtered = useMemo(() => rowsOf(customers.data).filter((customer) => nameOf(customer).toLowerCase().includes(search.toLowerCase())), [customers.data, search]);
+  const customers = useCustomers(cleanParams({
+    page,
+    page_size: pageSize,
+    search: appliedFilters.search,
+    user_id: appliedFilters.user_id,
+    is_active: booleanParam(appliedFilters.is_active),
+  }));
+  const users = useUsers(
+    { page: 1, page_size: 100 },
+    { enabled: userOptionsEnabled, staleTime: 5 * 60 * 1000 },
+  );
+  const orders = useOrders({ customer_id: selected?.id, page: 1, page_size: 10 }, { enabled: Boolean(selected?.id) });
+
+  const applyFilters = (event) => {
+    event.preventDefault();
+    setAppliedFilters(draftFilters);
+    setPage(1);
+  };
+
+  const clearFilters = () => {
+    setDraftFilters(initialFilters);
+    setAppliedFilters(initialFilters);
+    setPage(1);
+  };
 
   const columns = [
     { key: 'name', header: 'Customer', render: (row) => <span className="font-semibold text-slate-900">{nameOf(row)}</span> },
@@ -29,11 +56,16 @@ export default function CustomersPage() {
     <div className="flex h-[calc(100vh-6rem)] flex-col gap-5 overflow-hidden sm:h-[calc(100vh-7rem)]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div><h1 className="text-2xl font-bold text-slate-950">Customers</h1><p className="mt-1 text-sm text-slate-500">Search customers and review their order history.</p></div>
-        <div className="relative w-full sm:w-80"><Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input className="input pl-9" placeholder="Search customers" value={search} onChange={(event) => setSearch(event.target.value)} /></div>
       </div>
+      <form className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_180px_auto]" onSubmit={applyFilters}>
+        <label className="label"><span>Search</span><div className="relative mt-1"><Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input className="input pl-9" placeholder="Customer" value={draftFilters.search} onChange={(event) => setDraftFilters({ ...draftFilters, search: event.target.value })} /></div></label>
+        <label className="label">User<select className="input mt-1" value={draftFilters.user_id} onFocus={() => setUserOptionsEnabled(true)} onChange={(event) => setDraftFilters({ ...draftFilters, user_id: event.target.value })}><option value="">All users</option>{rowsOf(users.data).map((user) => <option key={user.id} value={user.id}>{nameOf(user)}</option>)}</select></label>
+        <label className="label">Status<select className="input mt-1" value={draftFilters.is_active} onChange={(event) => setDraftFilters({ ...draftFilters, is_active: event.target.value })}><option value="">Any</option><option value="true">Active</option><option value="false">Inactive</option></select></label>
+        <div className="flex items-end gap-2"><button className="btn-primary" type="submit"><Search className="h-4 w-4" /> Apply</button><button className="btn-secondary px-3" type="button" onClick={clearFilters} aria-label="Clear filters"><X className="h-4 w-4" /></button></div>
+      </form>
       {customers.isLoading ? <LoadingState label="Loading customers" /> : null}
       {customers.isError ? <ErrorState error={customers.error} /> : null}
-      {!customers.isLoading && !customers.isError ? <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white"><Table columns={columns} data={filtered} containerClassName="min-h-0 flex-1 rounded-none border-0" scrollClassName="h-full overflow-auto" stickyHeader /><Pagination page={page} pageSize={pageSize} total={totalOf(customers.data)} meta={customers.data?.meta} onPageChange={setPage} onPageSizeChange={setPageSize} /></div> : null}
+      {!customers.isLoading && !customers.isError ? <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white"><Table columns={columns} data={rowsOf(customers.data)} containerClassName="min-h-0 flex-1 rounded-none border-0" scrollClassName="h-full overflow-auto" stickyHeader /><Pagination page={page} pageSize={pageSize} total={totalOf(customers.data)} meta={customers.data?.meta} onPageChange={setPage} onPageSizeChange={setPageSize} /></div> : null}
       {selected ? (
         <div className="fixed inset-0 z-40 bg-slate-950/30" onClick={() => setSelected(null)}>
           <aside className="ml-auto h-full w-full max-w-lg overflow-y-auto bg-white p-5 shadow-soft" onClick={(event) => event.stopPropagation()}>

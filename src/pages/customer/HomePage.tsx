@@ -8,8 +8,8 @@ import { useCartStore } from '../../store/cartStore';
 import { currency, nameOf, productPrice, rowsOf } from '../../utils/data';
 
 export default function HomePage() {
-  const products = useProducts({ page: 1, page_size: 8 });
-  const categories = useProductCategories();
+  const products = useProducts({ page: 1, page_size: 8, is_active: true });
+  const categories = useProductCategories({ page: 1, page_size: 100, is_active: true }, { staleTime: 5 * 60 * 1000 });
   const addItem = useCartStore((state) => state.addItem);
 
   return (

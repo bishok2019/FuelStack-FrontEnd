@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createPaymentMethod, listPaymentMethods } from '../api/paymentMethods';
 
-export const usePaymentMethods = (params = {}) =>
-  useQuery({ queryKey: ['payment-methods', params], queryFn: () => listPaymentMethods(params) });
+export const usePaymentMethods = (params = {}, options = {}) =>
+  useQuery({ queryKey: ['payment-methods', params], queryFn: () => listPaymentMethods(params), ...options });
 
 export const useCreatePaymentMethod = () => {
   const queryClient = useQueryClient();

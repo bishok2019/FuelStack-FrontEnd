@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { decodeJwt, getRefreshToken, getToken, useAuthStore } from '../store/authStore';
+import { getRefreshToken, getToken, useAuthStore } from '../store/authStore';
 
 const api = axios.create({
   baseURL: 'http://localhost:8005/api/v1',
@@ -9,25 +9,19 @@ const api = axios.create({
 });
 
 let refreshPromise = null;
-const TOKEN_EXPIRY_SKEW_MS = 30_000;
 
 const authPaths = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout'];
 const isAuthPath = (url = '') => authPaths.some((path) => url.includes(path));
 
 const extractAccessToken = (data) => data?.access_token || data?.token || data?.jwt;
 const extractRefreshToken = (data) => data?.refresh_token || data?.refreshToken || data?.refresh;
-
-const isExpiredToken = (token) => {
-  const expiresAt = decodeJwt(token)?.exp;
-  if (typeof expiresAt !== 'number') return false;
-  return expiresAt * 1000 <= Date.now() + TOKEN_EXPIRY_SKEW_MS;
-};
+const isTokenExpiredError = (error) => error.response?.data?.message === 'Token has expired';
 
 const refreshAccessToken = (refreshToken) => {
   refreshPromise =
     refreshPromise ||
     api
-      .post('/auth/refresh', null, { params: { refresh_token: refreshToken } })
+      .post('/auth/refresh', null, { params: { current_refresh_token: refreshToken } })
       .then(unwrap)
       .finally(() => {
         refreshPromise = null;
@@ -47,21 +41,10 @@ const saveRefreshData = (refreshData) => {
   return nextToken;
 };
 
-api.interceptors.request.use(async (config) => {
+api.interceptors.request.use((config) => {
   if (isAuthPath(config.url)) return config;
 
-  let token = getToken();
-  const refreshToken = getRefreshToken();
-
-  if (token && refreshToken && isExpiredToken(token)) {
-    try {
-      const refreshData = await refreshAccessToken(refreshToken);
-      token = saveRefreshData(refreshData) || token;
-    } catch {
-      useAuthStore.getState().logout();
-      token = null;
-    }
-  }
+  const token = getToken();
 
   if (token) {
     config.headers = config.headers || {};
@@ -77,7 +60,7 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     if (
-      error.response?.status === 401 &&
+      isTokenExpiredError(error) &&
       originalRequest &&
       !originalRequest._retry &&
       !isAuthPath(originalRequest.url)

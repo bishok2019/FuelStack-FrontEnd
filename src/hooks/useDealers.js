@@ -1,14 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createBrand, createDealer, createHub, listBrands, listDealers, listHubs } from '../api/dealers';
 
-export const useBrands = (params = {}) =>
-  useQuery({ queryKey: ['brands', params], queryFn: () => listBrands(params) });
+export const useBrands = (params = {}, options = {}) =>
+  useQuery({ queryKey: ['brands', params], queryFn: () => listBrands(params), ...options });
 
-export const useDealers = (params = {}) =>
-  useQuery({ queryKey: ['dealers', params], queryFn: () => listDealers(params) });
+export const useDealers = (params = {}, options = {}) =>
+  useQuery({ queryKey: ['dealers', params], queryFn: () => listDealers(params), ...options });
 
-export const useHubs = (params = {}) =>
-  useQuery({ queryKey: ['hubs', params], queryFn: () => listHubs(params) });
+export const useHubs = (params = {}, options = {}) =>
+  useQuery({ queryKey: ['hubs', params], queryFn: () => listHubs(params), ...options });
 
 export const useCreateBrand = () => {
   const queryClient = useQueryClient();

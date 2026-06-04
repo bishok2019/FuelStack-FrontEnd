@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createUser, listUsers, retrieveUser, updateUser } from '../api/users';
 
-export const useUsers = (params = {}) =>
-  useQuery({ queryKey: ['users', params], queryFn: () => listUsers(params) });
+export const useUsers = (params = {}, options = {}) =>
+  useQuery({ queryKey: ['users', params], queryFn: () => listUsers(params), ...options });
 
 export const useUser = (id) =>
   useQuery({ queryKey: ['users', id], queryFn: () => retrieveUser(id), enabled: Boolean(id) });

@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createInventory, deleteInventory, listInventory, updateInventory } from '../api/inventory';
 
-export const useInventory = (params = {}) =>
-  useQuery({ queryKey: ['inventory', params], queryFn: () => listInventory(params) });
+export const useInventory = (params = {}, options = {}) =>
+  useQuery({ queryKey: ['inventory', params], queryFn: () => listInventory(params), ...options });
 
 export const useCreateInventory = () => {
   const queryClient = useQueryClient();

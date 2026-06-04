@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Edit, Plus } from 'lucide-react';
+import { Edit, Plus, Search, X } from 'lucide-react';
 import Badge from '../../components/Badge';
 import ErrorState from '../../components/ErrorState';
 import LoadingState from '../../components/LoadingState';
@@ -11,21 +11,52 @@ import { useCreateInventory, useInventory, useUpdateInventory } from '../../hook
 import { useProducts } from '../../hooks/useProducts';
 import usePaginationParams from '../../hooks/usePaginationParams';
 import { lowStock, nameOf, rowsOf, totalOf } from '../../utils/data';
+import { booleanParam, cleanParams } from '../../utils/query';
 
 const initialForm = { hub_id: '', product_id: '', filled_qty: 0, empty_qty: 0, reserved_qty: 0, damaged_qty: 0 };
+const initialFilters = { search: '', product_id: '', hub_id: '', is_active: '' };
 
 export default function InventoryPage() {
   const { page, pageSize, setPage, setPageSize } = usePaginationParams();
+  const [draftFilters, setDraftFilters] = useState(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState(initialFilters);
+  const [inventoryOptionsEnabled, setInventoryOptionsEnabled] = useState(false);
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(initialForm);
-  const inventory = useInventory({ page, page_size: pageSize });
-  const hubs = useHubs();
-  const products = useProducts({ page: 1, page_size: 100 });
+  const inventory = useInventory(cleanParams({
+    page,
+    page_size: pageSize,
+    search: appliedFilters.search,
+    product_id: appliedFilters.product_id,
+    hub_id: appliedFilters.hub_id,
+    is_active: booleanParam(appliedFilters.is_active),
+  }));
+  const hubs = useHubs(
+    { page: 1, page_size: 100 },
+    { enabled: inventoryOptionsEnabled, staleTime: 5 * 60 * 1000 },
+  );
+  const products = useProducts(
+    { page: 1, page_size: 100 },
+    { enabled: inventoryOptionsEnabled, staleTime: 5 * 60 * 1000 },
+  );
   const createInventory = useCreateInventory();
   const updateInventory = useUpdateInventory();
 
+  const applyFilters = (event) => {
+    event.preventDefault();
+    setAppliedFilters(draftFilters);
+    setPage(1);
+  };
+
+  const clearFilters = () => {
+    setDraftFilters(initialFilters);
+    setAppliedFilters(initialFilters);
+    setPage(1);
+  };
+
   const openForm = (row = null) => {
+    setInventoryOptionsEnabled(true);
     setEditing(row);
     setForm(row ? {
       hub_id: row.hub_id || row.hub?.id || '',
@@ -75,6 +106,19 @@ export default function InventoryPage() {
         </div>
         <button className="btn-primary" onClick={() => openForm()}><Plus className="h-4 w-4" /> Add record</button>
       </div>
+      <form className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_180px_auto]" onSubmit={applyFilters}>
+        <label className="label">
+          Search
+          <div className="relative mt-1">
+            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <input className="input pl-9" placeholder="Inventory" value={draftFilters.search} onChange={(event) => setDraftFilters({ ...draftFilters, search: event.target.value })} />
+          </div>
+        </label>
+        <label className="label">Product<select className="input mt-1" value={draftFilters.product_id} onFocus={() => setInventoryOptionsEnabled(true)} onChange={(event) => setDraftFilters({ ...draftFilters, product_id: event.target.value })}><option value="">All products</option>{rowsOf(products.data).map((product) => <option key={product.id} value={product.id}>{nameOf(product)}</option>)}</select></label>
+        <label className="label">Hub<select className="input mt-1" value={draftFilters.hub_id} onFocus={() => setInventoryOptionsEnabled(true)} onChange={(event) => setDraftFilters({ ...draftFilters, hub_id: event.target.value })}><option value="">All hubs</option>{rowsOf(hubs.data).map((hub) => <option key={hub.id} value={hub.id}>{nameOf(hub)}</option>)}</select></label>
+        <label className="label">Status<select className="input mt-1" value={draftFilters.is_active} onChange={(event) => setDraftFilters({ ...draftFilters, is_active: event.target.value })}><option value="">Any</option><option value="true">Active</option><option value="false">Inactive</option></select></label>
+        <div className="flex items-end gap-2"><button className="btn-primary" type="submit"><Search className="h-4 w-4" /> Apply</button><button className="btn-secondary px-3" type="button" onClick={clearFilters} aria-label="Clear filters"><X className="h-4 w-4" /></button></div>
+      </form>
       {inventory.isLoading ? <LoadingState label="Loading inventory" /> : null}
       {inventory.isError ? <ErrorState error={inventory.error} /> : null}
       {!inventory.isLoading && !inventory.isError ? (
@@ -91,8 +135,8 @@ export default function InventoryPage() {
       ) : null}
       <Modal open={modal} title={editing ? 'Edit inventory record' : 'Add inventory record'} onClose={() => setModal(false)}>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={save}>
-          <label className="label">Hub<select className="input mt-1" value={form.hub_id} onChange={(event) => setForm({ ...form, hub_id: event.target.value })} required><option value="">Select hub</option>{rowsOf(hubs.data).map((hub) => <option key={hub.id} value={hub.id}>{nameOf(hub)}</option>)}</select></label>
-          <label className="label">Product<select className="input mt-1" value={form.product_id} onChange={(event) => setForm({ ...form, product_id: event.target.value })} required><option value="">Select product</option>{rowsOf(products.data).map((product) => <option key={product.id} value={product.id}>{nameOf(product)}</option>)}</select></label>
+          <label className="label">Hub<select className="input mt-1" value={form.hub_id} onFocus={() => setInventoryOptionsEnabled(true)} onChange={(event) => setForm({ ...form, hub_id: event.target.value })} required><option value="">Select hub</option>{rowsOf(hubs.data).map((hub) => <option key={hub.id} value={hub.id}>{nameOf(hub)}</option>)}</select></label>
+          <label className="label">Product<select className="input mt-1" value={form.product_id} onFocus={() => setInventoryOptionsEnabled(true)} onChange={(event) => setForm({ ...form, product_id: event.target.value })} required><option value="">Select product</option>{rowsOf(products.data).map((product) => <option key={product.id} value={product.id}>{nameOf(product)}</option>)}</select></label>
           {['filled_qty', 'empty_qty', 'reserved_qty', 'damaged_qty'].map((field) => (
             <label key={field} className="label">{field.replace('_', ' ')}<input className="input mt-1" type="number" min="0" value={form[field]} onChange={(event) => setForm({ ...form, [field]: event.target.value })} /></label>
           ))}

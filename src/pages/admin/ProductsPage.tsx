@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Search, X } from 'lucide-react';
 import Badge from '../../components/Badge';
 import ErrorState from '../../components/ErrorState';
 import LoadingState from '../../components/LoadingState';
@@ -10,22 +10,52 @@ import { useBrands } from '../../hooks/useDealers';
 import { useCreateProduct, useProductCategories, useProducts, useUpdateProduct } from '../../hooks/useProducts';
 import usePaginationParams from '../../hooks/usePaginationParams';
 import { currency, nameOf, rowsOf, totalOf } from '../../utils/data';
+import { booleanParam, cleanParams } from '../../utils/query';
 
 const initialForm = { name: '', description: '', price: '', brand_id: '', category_id: '', is_active: true };
+const initialFilters = { search: '', category_id: '', brand_id: '', is_active: '' };
 
 export default function ProductsPage() {
   const { page, pageSize, setPage, setPageSize } = usePaginationParams();
-  const [categoryId, setCategoryId] = useState('');
+  const [draftFilters, setDraftFilters] = useState(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState(initialFilters);
+  const [productOptionsEnabled, setProductOptionsEnabled] = useState(false);
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(initialForm);
-  const products = useProducts({ page, page_size: pageSize, category_id: categoryId || undefined });
-  const categories = useProductCategories();
-  const brands = useBrands();
+  const products = useProducts(cleanParams({
+    page,
+    page_size: pageSize,
+    search: appliedFilters.search,
+    category_id: appliedFilters.category_id,
+    brand_id: appliedFilters.brand_id,
+    is_active: booleanParam(appliedFilters.is_active),
+  }));
+  const categories = useProductCategories(
+    { page: 1, page_size: 100 },
+    { enabled: productOptionsEnabled, staleTime: 5 * 60 * 1000 },
+  );
+  const brands = useBrands(
+    { page: 1, page_size: 100 },
+    { enabled: productOptionsEnabled, staleTime: 5 * 60 * 1000 },
+  );
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
 
+  const applyFilters = (event) => {
+    event.preventDefault();
+    setAppliedFilters(draftFilters);
+    setPage(1);
+  };
+
+  const clearFilters = () => {
+    setDraftFilters(initialFilters);
+    setAppliedFilters(initialFilters);
+    setPage(1);
+  };
+
   const openForm = (row = null) => {
+    setProductOptionsEnabled(true);
     setEditing(row);
     setForm(row ? {
       name: row.name || '',
@@ -63,12 +93,19 @@ export default function ProductsPage() {
         </div>
         <button className="btn-primary" onClick={() => openForm()}><Plus className="h-4 w-4" /> Add product</button>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <button className={`rounded-full px-3 py-1 text-sm font-semibold ${categoryId === '' ? 'bg-primary text-white' : 'border border-slate-200 bg-white text-slate-600'}`} onClick={() => setCategoryId('')}>All</button>
-        {rowsOf(categories.data).map((category) => (
-          <button key={category.id} className={`rounded-full px-3 py-1 text-sm font-semibold ${String(categoryId) === String(category.id) ? 'bg-primary text-white' : 'border border-slate-200 bg-white text-slate-600'}`} onClick={() => setCategoryId(category.id)}>{nameOf(category)}</button>
-        ))}
-      </div>
+      <form className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_180px_auto]" onSubmit={applyFilters}>
+        <label className="label">
+          Search
+          <div className="relative mt-1">
+            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <input className="input pl-9" placeholder="Product name" value={draftFilters.search} onChange={(event) => setDraftFilters({ ...draftFilters, search: event.target.value })} />
+          </div>
+        </label>
+        <label className="label">Category<select className="input mt-1" value={draftFilters.category_id} onFocus={() => setProductOptionsEnabled(true)} onChange={(event) => setDraftFilters({ ...draftFilters, category_id: event.target.value })}><option value="">All categories</option>{rowsOf(categories.data).map((category) => <option key={category.id} value={category.id}>{nameOf(category)}</option>)}</select></label>
+        <label className="label">Brand<select className="input mt-1" value={draftFilters.brand_id} onFocus={() => setProductOptionsEnabled(true)} onChange={(event) => setDraftFilters({ ...draftFilters, brand_id: event.target.value })}><option value="">All brands</option>{rowsOf(brands.data).map((brand) => <option key={brand.id} value={brand.id}>{nameOf(brand)}</option>)}</select></label>
+        <label className="label">Status<select className="input mt-1" value={draftFilters.is_active} onChange={(event) => setDraftFilters({ ...draftFilters, is_active: event.target.value })}><option value="">Any</option><option value="true">Active</option><option value="false">Inactive</option></select></label>
+        <div className="flex items-end gap-2"><button className="btn-primary" type="submit"><Search className="h-4 w-4" /> Apply</button><button className="btn-secondary px-3" type="button" onClick={clearFilters} aria-label="Clear filters"><X className="h-4 w-4" /></button></div>
+      </form>
       {products.isLoading ? <LoadingState label="Loading products" /> : null}
       {products.isError ? <ErrorState error={products.error} /> : null}
       {!products.isLoading && !products.isError ? (
@@ -88,8 +125,8 @@ export default function ProductsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="label">Name<input className="input mt-1" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /></label>
             <label className="label">Price<input className="input mt-1" type="number" min="0" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} required /></label>
-            <label className="label">Brand<select className="input mt-1" value={form.brand_id} onChange={(event) => setForm({ ...form, brand_id: event.target.value })}><option value="">Select brand</option>{rowsOf(brands.data).map((brand) => <option key={brand.id} value={brand.id}>{nameOf(brand)}</option>)}</select></label>
-            <label className="label">Category<select className="input mt-1" value={form.category_id} onChange={(event) => setForm({ ...form, category_id: event.target.value })}><option value="">Select category</option>{rowsOf(categories.data).map((category) => <option key={category.id} value={category.id}>{nameOf(category)}</option>)}</select></label>
+            <label className="label">Brand<select className="input mt-1" value={form.brand_id} onFocus={() => setProductOptionsEnabled(true)} onChange={(event) => setForm({ ...form, brand_id: event.target.value })}><option value="">Select brand</option>{rowsOf(brands.data).map((brand) => <option key={brand.id} value={brand.id}>{nameOf(brand)}</option>)}</select></label>
+            <label className="label">Category<select className="input mt-1" value={form.category_id} onFocus={() => setProductOptionsEnabled(true)} onChange={(event) => setForm({ ...form, category_id: event.target.value })}><option value="">Select category</option>{rowsOf(categories.data).map((category) => <option key={category.id} value={category.id}>{nameOf(category)}</option>)}</select></label>
           </div>
           <label className="label block">Description<textarea className="input mt-1 min-h-24" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
           <label className="flex items-center gap-2 text-sm font-medium text-slate-700"><input type="checkbox" checked={form.is_active} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} /> Active</label>

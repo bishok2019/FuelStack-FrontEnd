@@ -7,11 +7,11 @@ import {
   updateProduct,
 } from '../api/products';
 
-export const useProducts = (params = {}) =>
-  useQuery({ queryKey: ['products', params], queryFn: () => listProducts(params) });
+export const useProducts = (params = {}, options = {}) =>
+  useQuery({ queryKey: ['products', params], queryFn: () => listProducts(params), ...options });
 
-export const useProductCategories = (params = {}) =>
-  useQuery({ queryKey: ['product-categories', params], queryFn: () => listProductCategories(params) });
+export const useProductCategories = (params = {}, options = {}) =>
+  useQuery({ queryKey: ['product-categories', params], queryFn: () => listProductCategories(params), ...options });
 
 export const useCreateProduct = () => {
   const queryClient = useQueryClient();

@@ -1,30 +1,51 @@
-import { useMemo, useState } from 'react';
-import { Loader2, Minus, Plus, Search, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Loader2, Minus, Plus, Search, Trash2, X } from 'lucide-react';
 import Badge from '../../components/Badge';
 import ErrorState from '../../components/ErrorState';
 import LoadingState from '../../components/LoadingState';
+import { useBrands } from '../../hooks/useDealers';
 import { useCreateOrder } from '../../hooks/useOrders';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 import { useProductCategories, useProducts } from '../../hooks/useProducts';
 import { useCartStore } from '../../store/cartStore';
 import { currency, nameOf, productPrice, rowsOf } from '../../utils/data';
 import { messageOf } from '../../utils/errors';
+import { cleanParams } from '../../utils/query';
+
+const initialFilters = { search: '', category_id: '', brand_id: '' };
 
 export default function ProductsPage() {
-  const [search, setSearch] = useState('');
-  const [categoryId, setCategoryId] = useState('');
+  const [draftFilters, setDraftFilters] = useState(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState(initialFilters);
+  const [productOptionsEnabled, setProductOptionsEnabled] = useState(false);
+  const [paymentOptionsEnabled, setPaymentOptionsEnabled] = useState(false);
   const [paymentMethodId, setPaymentMethodId] = useState('');
   const [shippingAddress, setShippingAddress] = useState('');
-  const products = useProducts({ page: 1, page_size: 100, search, category_id: categoryId || undefined });
-  const categories = useProductCategories();
-  const paymentMethods = usePaymentMethods();
+  const products = useProducts(cleanParams({ page: 1, page_size: 100, ...appliedFilters, is_active: true }));
+  const categories = useProductCategories(
+    { page: 1, page_size: 100, is_active: true },
+    { enabled: productOptionsEnabled, staleTime: 5 * 60 * 1000 },
+  );
+  const brands = useBrands(
+    { page: 1, page_size: 100, is_active: true },
+    { enabled: productOptionsEnabled, staleTime: 5 * 60 * 1000 },
+  );
+  const paymentMethods = usePaymentMethods(
+    { page: 1, page_size: 100, is_active: true },
+    { enabled: paymentOptionsEnabled, staleTime: 5 * 60 * 1000 },
+  );
   const createOrder = useCreateOrder();
   const { items, addItem, removeItem, updateQty, clearCart, total } = useCartStore();
 
-  const filteredProducts = useMemo(() => {
-    const term = search.toLowerCase();
-    return rowsOf(products.data).filter((product) => nameOf(product).toLowerCase().includes(term));
-  }, [products.data, search]);
+  const applyFilters = (event) => {
+    event.preventDefault();
+    setAppliedFilters(draftFilters);
+  };
+
+  const clearFilters = () => {
+    setDraftFilters(initialFilters);
+    setAppliedFilters(initialFilters);
+  };
 
    const placeOrder = () => {
      createOrder.mutate(
@@ -50,25 +71,33 @@ export default function ProductsPage() {
             <h1 className="text-2xl font-bold text-slate-950">Products</h1>
             <p className="mt-1 text-sm text-slate-500">Browse products and prepare your delivery order.</p>
           </div>
-          <div className="relative w-full sm:w-72">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <input className="input pl-9" placeholder="Search products" value={search} onChange={(event) => setSearch(event.target.value)} />
-          </div>
         </div>
+        <form className="mb-5 grid gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1fr_auto]" onSubmit={applyFilters}>
+          <label className="label">
+            Search
+            <div className="relative mt-1">
+            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <input className="input pl-9" placeholder="Search products" value={draftFilters.search} onChange={(event) => setDraftFilters({ ...draftFilters, search: event.target.value })} />
+            </div>
+          </label>
+          <label className="label">Category<select className="input mt-1" value={draftFilters.category_id} onFocus={() => setProductOptionsEnabled(true)} onChange={(event) => setDraftFilters({ ...draftFilters, category_id: event.target.value })}><option value="">All categories</option>{rowsOf(categories.data).map((category) => <option key={category.id} value={category.id}>{nameOf(category)}</option>)}</select></label>
+          <label className="label">Brand<select className="input mt-1" value={draftFilters.brand_id} onFocus={() => setProductOptionsEnabled(true)} onChange={(event) => setDraftFilters({ ...draftFilters, brand_id: event.target.value })}><option value="">All brands</option>{rowsOf(brands.data).map((brand) => <option key={brand.id} value={brand.id}>{nameOf(brand)}</option>)}</select></label>
+          <div className="flex items-end gap-2"><button className="btn-primary" type="submit"><Search className="h-4 w-4" /> Apply</button><button className="btn-secondary px-3" type="button" onClick={clearFilters} aria-label="Clear filters"><X className="h-4 w-4" /></button></div>
+        </form>
         <div className="mb-5 flex flex-wrap gap-2">
-          <button className={`rounded-full px-3 py-1 text-sm font-semibold ${categoryId === '' ? 'bg-primary text-white' : 'border border-slate-200 bg-white text-slate-600'}`} onClick={() => setCategoryId('')}>
+          <button className={`rounded-full px-3 py-1 text-sm font-semibold ${draftFilters.category_id === '' ? 'bg-primary text-white' : 'border border-slate-200 bg-white text-slate-600'}`} onClick={() => setDraftFilters({ ...draftFilters, category_id: '' })}>
             All
           </button>
           {rowsOf(categories.data).map((category) => (
-            <button key={category.id} className={`rounded-full px-3 py-1 text-sm font-semibold ${String(category.id) === String(categoryId) ? 'bg-primary text-white' : 'border border-slate-200 bg-white text-slate-600'}`} onClick={() => setCategoryId(category.id)}>
+            <button key={category.id} className={`rounded-full px-3 py-1 text-sm font-semibold ${String(category.id) === String(draftFilters.category_id) ? 'bg-primary text-white' : 'border border-slate-200 bg-white text-slate-600'}`} onClick={() => setDraftFilters({ ...draftFilters, category_id: category.id })}>
               {nameOf(category)}
             </button>
           ))}
-        </div>
+          </div>
         {products.isLoading ? <LoadingState label="Loading products" /> : null}
         {products.isError ? <ErrorState error={products.error} /> : null}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {filteredProducts.map((product) => (
+          {rowsOf(products.data).map((product) => (
             <article key={product.id} className="panel p-4">
               <div className="flex h-full flex-col">
                 <div className="h-32 rounded-md bg-gradient-to-br from-blue-50 via-slate-100 to-emerald-50" />
@@ -112,7 +141,7 @@ export default function ProductsPage() {
         <div className="mt-5 space-y-4 border-t border-slate-200 pt-4">
           <div>
             <label className="label">Payment method</label>
-            <select className="input mt-1" value={paymentMethodId} onChange={(event) => setPaymentMethodId(event.target.value)}>
+            <select className="input mt-1" value={paymentMethodId} onFocus={() => setPaymentOptionsEnabled(true)} onChange={(event) => setPaymentMethodId(event.target.value)}>
               <option value="">Select method</option>
               {rowsOf(paymentMethods.data).map((method) => (
                 <option key={method.id} value={method.id}>{nameOf(method)}</option>
