@@ -1,6 +1,7 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { LogOut, ShoppingCart } from 'lucide-react';
-import { useAuthStore, isSystemUser } from '../store/authStore';
+import { logoutSession } from '../api/auth';
+import { getRefreshToken, useAuthStore, isSystemUser } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 
 export default function Topbar({ admin = false }) {
@@ -8,9 +9,15 @@ export default function Topbar({ admin = false }) {
   const { token, userType, logout } = useAuthStore();
   const cartCount = useCartStore((state) => state.items.reduce((sum, item) => sum + item.quantity, 0));
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logoutSession(getRefreshToken());
+    } catch {
+      // Local logout should still complete if the server token is already invalid.
+    } finally {
+      logout();
+      navigate('/login');
+    }
   };
 
   return (

@@ -5,7 +5,6 @@ import { Loader2 } from 'lucide-react';
 import { login } from '../../api/auth';
 import { isSystemUser, useAuthStore } from '../../store/authStore';
 import { messageOf } from '../../utils/errors';
-
 export default function LoginPage() {
   const navigate = useNavigate();
   const { token, userType, setAuth } = useAuthStore();
@@ -15,8 +14,9 @@ export default function LoginPage() {
     mutationFn: login,
     onSuccess: (data) => {
       const jwt = data?.access_token || data?.token || data?.jwt;
+      const refreshToken = data?.refresh_token || data?.refreshToken || data?.refresh;
       if (!jwt) return;
-      setAuth(jwt);
+      setAuth(jwt, refreshToken);
       const nextUserType = useAuthStore.getState().userType;
       navigate(isSystemUser(nextUserType) ? '/admin/dashboard' : '/', { replace: true });
     },
