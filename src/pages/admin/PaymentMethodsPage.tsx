@@ -5,6 +5,7 @@ import ErrorState from '../../components/ErrorState';
 import LoadingState from '../../components/LoadingState';
 import Modal from '../../components/Modal';
 import Pagination from '../../components/Pagination';
+import SearchableSelect from '../../components/SearchableSelect';
 import Table from '../../components/Table';
 import { useCreatePaymentMethod, usePaymentMethods } from '../../hooks/usePaymentMethods';
 import usePaginationParams from '../../hooks/usePaginationParams';
@@ -12,6 +13,11 @@ import { nameOf, rowsOf, totalOf } from '../../utils/data';
 import { booleanParam, cleanParams } from '../../utils/query';
 
 const initialFilters = { search: '', is_active: '' };
+const statusOptions = [
+  { value: '', label: 'Any' },
+  { value: 'true', label: 'Active' },
+  { value: 'false', label: 'Inactive' },
+];
 
 export default function PaymentMethodsPage() {
   const { page, pageSize, setPage, setPageSize } = usePaginationParams();
@@ -58,7 +64,7 @@ export default function PaymentMethodsPage() {
       </div>
       <form className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-[1fr_180px_auto]" onSubmit={applyFilters}>
         <label className="label"><span>Search</span><div className="relative mt-1"><Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input className="input pl-9" placeholder="Payment method" value={draftFilters.search} onChange={(event) => setDraftFilters({ ...draftFilters, search: event.target.value })} /></div></label>
-        <label className="label">Status<select className="input mt-1" value={draftFilters.is_active} onChange={(event) => setDraftFilters({ ...draftFilters, is_active: event.target.value })}><option value="">Any</option><option value="true">Active</option><option value="false">Inactive</option></select></label>
+        <label className="label">Status<SearchableSelect className="mt-1" value={draftFilters.is_active} options={statusOptions} onChange={(value) => setDraftFilters({ ...draftFilters, is_active: value })} placeholder="Any" searchPlaceholder="Search status" /></label>
         <div className="flex items-end gap-2"><button className="btn-primary" type="submit"><Search className="h-4 w-4" /> Apply</button><button className="btn-secondary px-3" type="button" onClick={clearFilters} aria-label="Clear filters"><X className="h-4 w-4" /></button></div>
       </form>
       {paymentMethods.isLoading ? <LoadingState label="Loading payment methods" /> : null}

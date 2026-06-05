@@ -3,6 +3,7 @@ import Cookies from 'js-cookie';
 
 const TOKEN_KEY = 'fuelstack_token';
 const REFRESH_TOKEN_KEY = 'fuelstack_refresh_token';
+const USER_KEY = 'fuelstack_user';
 const ACCESS_TOKEN_COOKIE_KEY = 'accessToken';
 const REFRESH_TOKEN_COOKIE_KEY = 'refreshToken';
 
@@ -24,7 +25,15 @@ export function decodeJwt(token) {
 
 const storedToken = localStorage.getItem(TOKEN_KEY);
 const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-const storedUser = storedToken ? decodeJwt(storedToken) : null;
+const getStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem(USER_KEY));
+  } catch {
+    return null;
+  }
+};
+const storedTokenUser = storedToken ? decodeJwt(storedToken) : null;
+const storedUser = storedTokenUser || getStoredUser() ? { ...storedTokenUser, ...getStoredUser() } : null;
 
 const getUserType = (user) => user?.user_type || user?.usertype || user?.userType || null;
 const normalizeUserType = (userType) => (typeof userType === 'string' ? userType.toUpperCase() : userType);
@@ -34,10 +43,11 @@ export const useAuthStore = create((set) => ({
   refreshToken: storedRefreshToken,
   user: storedUser,
   userType: normalizeUserType(getUserType(storedUser)),
-  setAuth: (token, refreshToken) => {
-    const user = decodeJwt(token);
+  setAuth: (token, refreshToken, userData) => {
+    const user = { ...decodeJwt(token), ...(userData || getStoredUser()) };
     localStorage.setItem(TOKEN_KEY, token);
     Cookies.set(ACCESS_TOKEN_COOKIE_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
     if (refreshToken) {
       localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
       Cookies.set(REFRESH_TOKEN_COOKIE_KEY, refreshToken);
@@ -52,6 +62,7 @@ export const useAuthStore = create((set) => ({
   logout: () => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
     Cookies.remove(ACCESS_TOKEN_COOKIE_KEY);
     Cookies.remove(REFRESH_TOKEN_COOKIE_KEY);
     set({ token: null, refreshToken: null, user: null, userType: null });

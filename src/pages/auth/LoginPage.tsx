@@ -16,7 +16,7 @@ export default function LoginPage() {
       const jwt = data?.access_token || data?.token || data?.jwt;
       const refreshToken = data?.refresh_token || data?.refreshToken || data?.refresh;
       if (!jwt) return;
-      setAuth(jwt, refreshToken);
+      setAuth(jwt, refreshToken, data?.user);
       const nextUserType = useAuthStore.getState().userType;
       navigate(isSystemUser(nextUserType) ? '/admin/dashboard' : '/', { replace: true });
     },

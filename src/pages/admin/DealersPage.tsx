@@ -3,11 +3,22 @@ import { Plus, Search, X } from 'lucide-react';
 import ErrorState from '../../components/ErrorState';
 import LoadingState from '../../components/LoadingState';
 import Modal from '../../components/Modal';
+import SearchableSelect from '../../components/SearchableSelect';
 import { useCreateDealer, useCreateHub, useDealers, useHubs } from '../../hooks/useDealers';
 import { nameOf, rowsOf } from '../../utils/data';
 import { booleanParam, cleanParams } from '../../utils/query';
 
 const initialFilters = { search: '', is_active: '' };
+const statusOptions = [
+  { value: '', label: 'Any status' },
+  { value: 'true', label: 'Active' },
+  { value: 'false', label: 'Inactive' },
+];
+const hubStatusOptions = [
+  { value: '', label: 'Any' },
+  { value: 'true', label: 'Active' },
+  { value: 'false', label: 'Inactive' },
+];
 
 export default function DealersPage() {
   const [dealerDraftFilters, setDealerDraftFilters] = useState(initialFilters);
@@ -93,7 +104,7 @@ export default function DealersPage() {
           <h2 className="px-2 pb-3 text-sm font-semibold text-slate-500">Dealers</h2>
           <form className="mb-3 space-y-2" onSubmit={applyDealerFilters}>
             <div className="relative"><Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input className="input pl-9" placeholder="Search dealers" value={dealerDraftFilters.search} onChange={(event) => setDealerDraftFilters({ ...dealerDraftFilters, search: event.target.value })} /></div>
-            <div className="flex gap-2"><select className="input" value={dealerDraftFilters.is_active} onChange={(event) => setDealerDraftFilters({ ...dealerDraftFilters, is_active: event.target.value })}><option value="">Any status</option><option value="true">Active</option><option value="false">Inactive</option></select><button className="btn-primary px-3" type="submit" aria-label="Apply dealer filters"><Search className="h-4 w-4" /></button><button className="btn-secondary px-3" type="button" onClick={clearDealerFilters} aria-label="Clear dealer filters"><X className="h-4 w-4" /></button></div>
+            <div className="flex gap-2"><SearchableSelect value={dealerDraftFilters.is_active} options={statusOptions} onChange={(value) => setDealerDraftFilters({ ...dealerDraftFilters, is_active: value })} placeholder="Any status" searchPlaceholder="Search status" /><button className="btn-primary px-3" type="submit" aria-label="Apply dealer filters"><Search className="h-4 w-4" /></button><button className="btn-secondary px-3" type="button" onClick={clearDealerFilters} aria-label="Clear dealer filters"><X className="h-4 w-4" /></button></div>
           </form>
           <div className="space-y-2">
             {dealerRows.map((dealer) => (
@@ -108,7 +119,7 @@ export default function DealersPage() {
             <h2 className="text-lg font-semibold text-slate-950">Hubs under {nameOf(dealerRows.find((dealer) => String(dealer.id) === String(activeDealerId)), 'selected dealer')}</h2>
             <form className="grid gap-2 sm:w-[420px] sm:grid-cols-[1fr_140px_auto]" onSubmit={applyHubFilters}>
               <div className="relative"><Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input className="input pl-9" placeholder="Search hubs" value={hubDraftFilters.search} onChange={(event) => setHubDraftFilters({ ...hubDraftFilters, search: event.target.value })} /></div>
-              <select className="input" value={hubDraftFilters.is_active} onChange={(event) => setHubDraftFilters({ ...hubDraftFilters, is_active: event.target.value })}><option value="">Any</option><option value="true">Active</option><option value="false">Inactive</option></select>
+              <SearchableSelect value={hubDraftFilters.is_active} options={hubStatusOptions} onChange={(value) => setHubDraftFilters({ ...hubDraftFilters, is_active: value })} placeholder="Any" searchPlaceholder="Search status" />
               <div className="flex gap-2"><button className="btn-primary px-3" type="submit" aria-label="Apply hub filters"><Search className="h-4 w-4" /></button><button className="btn-secondary px-3" type="button" onClick={clearHubFilters} aria-label="Clear hub filters"><X className="h-4 w-4" /></button></div>
             </form>
           </div>

@@ -2,6 +2,7 @@ import Badge from '../../components/Badge';
 import ErrorState from '../../components/ErrorState';
 import LoadingState from '../../components/LoadingState';
 import Pagination from '../../components/Pagination';
+import SearchableSelect from '../../components/SearchableSelect';
 import Table from '../../components/Table';
 import { Search, X } from 'lucide-react';
 import { useOrders, useOrder } from '../../hooks/useOrders';
@@ -13,6 +14,12 @@ import { useState } from 'react';
 
 const statuses = ['', 'Pending', 'Processing', 'Delivered', 'Cancelled'];
 const initialFilters = { search: '', payment_method_id: '', is_paid: '', status: '' };
+const paidOptions = [
+  { value: '', label: 'Any' },
+  { value: 'true', label: 'Paid' },
+  { value: 'false', label: 'Unpaid' },
+];
+const statusOptions = statuses.map((item) => ({ value: item, label: item || 'All' }));
 
 export default function MyOrdersPage() {
   const { page, pageSize, setPage, setPageSize } = usePaginationParams();
@@ -67,9 +74,9 @@ export default function MyOrdersPage() {
       </div>
       <form className="mb-5 grid gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_160px_160px_auto]" onSubmit={applyFilters}>
         <label className="label"><span>Search</span><div className="relative mt-1"><Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input className="input pl-9" placeholder="Order" value={draftFilters.search} onChange={(event) => setDraftFilters({ ...draftFilters, search: event.target.value })} /></div></label>
-        <label className="label">Payment<select className="input mt-1" value={draftFilters.payment_method_id} onFocus={() => setPaymentOptionsEnabled(true)} onChange={(event) => setDraftFilters({ ...draftFilters, payment_method_id: event.target.value })}><option value="">All methods</option>{rowsOf(paymentMethods.data).map((method) => <option key={method.id} value={method.id}>{nameOf(method)}</option>)}</select></label>
-        <label className="label">Paid<select className="input mt-1" value={draftFilters.is_paid} onChange={(event) => setDraftFilters({ ...draftFilters, is_paid: event.target.value })}><option value="">Any</option><option value="true">Paid</option><option value="false">Unpaid</option></select></label>
-        <label className="label">Status<select className="input mt-1" value={draftFilters.status} onChange={(event) => setDraftFilters({ ...draftFilters, status: event.target.value })}>{statuses.map((item) => <option key={item || 'all'} value={item}>{item || 'All'}</option>)}</select></label>
+        <label className="label">Payment<SearchableSelect className="mt-1" value={draftFilters.payment_method_id} options={[{ value: '', label: 'All methods' }, ...rowsOf(paymentMethods.data).map((method) => ({ value: method.id, label: nameOf(method) }))]} onOpen={() => setPaymentOptionsEnabled(true)} onChange={(value) => setDraftFilters({ ...draftFilters, payment_method_id: value })} placeholder="All methods" searchPlaceholder="Search methods" /></label>
+        <label className="label">Paid<SearchableSelect className="mt-1" value={draftFilters.is_paid} options={paidOptions} onChange={(value) => setDraftFilters({ ...draftFilters, is_paid: value })} placeholder="Any" searchPlaceholder="Search paid" /></label>
+        <label className="label">Status<SearchableSelect className="mt-1" value={draftFilters.status} options={statusOptions} onChange={(value) => setDraftFilters({ ...draftFilters, status: value })} placeholder="All" searchPlaceholder="Search status" /></label>
         <div className="flex items-end gap-2"><button className="btn-primary" type="submit"><Search className="h-4 w-4" /> Apply</button><button className="btn-secondary px-3" type="button" onClick={clearFilters} aria-label="Clear filters"><X className="h-4 w-4" /></button></div>
       </form>
       {orders.isLoading ? <LoadingState label="Loading orders" /> : null}

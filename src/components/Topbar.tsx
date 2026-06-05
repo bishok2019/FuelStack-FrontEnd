@@ -6,7 +6,9 @@ import { useCartStore } from '../store/cartStore';
 
 export default function Topbar({ admin = false }) {
   const navigate = useNavigate();
-  const { token, userType, logout } = useAuthStore();
+  const { token, user, userType, logout } = useAuthStore();
+  const displayName = user?.username || user?.email || user?.sub;
+  const userInitial = displayName ? displayName.charAt(0).toUpperCase() : '';
   const cartCount = useCartStore((state) => state.items.reduce((sum, item) => sum + item.quantity, 0));
 
   const handleLogout = async () => {
@@ -41,9 +43,24 @@ export default function Topbar({ admin = false }) {
             </Link>
           ) : null}
           {token ? (
-            <button className="btn-secondary px-3" onClick={handleLogout} aria-label="Log out">
-              <LogOut className="h-4 w-4" />
-            </button>
+            <>
+              {displayName ? (
+                <span className="inline-flex items-center gap-2" title={displayName}>
+                  <span
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white"
+                    aria-hidden="true"
+                  >
+                    {userInitial}
+                  </span>
+                  <span className="hidden max-w-[10rem] truncate text-sm font-semibold text-slate-700 sm:inline">
+                    {displayName}
+                  </span>
+                </span>
+              ) : null}
+              <button className="btn-secondary px-3" onClick={handleLogout} aria-label="Log out">
+                <LogOut className="h-4 w-4" />
+              </button>
+            </>
           ) : (
             <Link className="btn-primary" to="/login">Login</Link>
           )}

@@ -3,6 +3,7 @@ import { Loader2, Minus, Plus, Search, Trash2, X } from 'lucide-react';
 import Badge from '../../components/Badge';
 import ErrorState from '../../components/ErrorState';
 import LoadingState from '../../components/LoadingState';
+import SearchableSelect from '../../components/SearchableSelect';
 import { useBrands } from '../../hooks/useDealers';
 import { useCreateOrder } from '../../hooks/useOrders';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
@@ -17,18 +18,19 @@ const initialFilters = { search: '', category_id: '', brand_id: '' };
 export default function ProductsPage() {
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
-  const [productOptionsEnabled, setProductOptionsEnabled] = useState(false);
+  const [categoryOptionsEnabled, setCategoryOptionsEnabled] = useState(false);
+  const [brandOptionsEnabled, setBrandOptionsEnabled] = useState(false);
   const [paymentOptionsEnabled, setPaymentOptionsEnabled] = useState(false);
   const [paymentMethodId, setPaymentMethodId] = useState('');
   const [shippingAddress, setShippingAddress] = useState('');
   const products = useProducts(cleanParams({ page: 1, page_size: 100, ...appliedFilters, is_active: true }));
   const categories = useProductCategories(
     { page: 1, page_size: 100, is_active: true },
-    { enabled: productOptionsEnabled, staleTime: 5 * 60 * 1000 },
+    { enabled: categoryOptionsEnabled, staleTime: 5 * 60 * 1000 },
   );
   const brands = useBrands(
     { page: 1, page_size: 100, is_active: true },
-    { enabled: productOptionsEnabled, staleTime: 5 * 60 * 1000 },
+    { enabled: brandOptionsEnabled, staleTime: 5 * 60 * 1000 },
   );
   const paymentMethods = usePaymentMethods(
     { page: 1, page_size: 100, is_active: true },
@@ -80,8 +82,8 @@ export default function ProductsPage() {
               <input className="input pl-9" placeholder="Search products" value={draftFilters.search} onChange={(event) => setDraftFilters({ ...draftFilters, search: event.target.value })} />
             </div>
           </label>
-          <label className="label">Category<select className="input mt-1" value={draftFilters.category_id} onFocus={() => setProductOptionsEnabled(true)} onChange={(event) => setDraftFilters({ ...draftFilters, category_id: event.target.value })}><option value="">All categories</option>{rowsOf(categories.data).map((category) => <option key={category.id} value={category.id}>{nameOf(category)}</option>)}</select></label>
-          <label className="label">Brand<select className="input mt-1" value={draftFilters.brand_id} onFocus={() => setProductOptionsEnabled(true)} onChange={(event) => setDraftFilters({ ...draftFilters, brand_id: event.target.value })}><option value="">All brands</option>{rowsOf(brands.data).map((brand) => <option key={brand.id} value={brand.id}>{nameOf(brand)}</option>)}</select></label>
+          <label className="label">Category<SearchableSelect className="mt-1" value={draftFilters.category_id} options={[{ value: '', label: 'All categories' }, ...rowsOf(categories.data).map((category) => ({ value: category.id, label: nameOf(category) }))]} onOpen={() => setCategoryOptionsEnabled(true)} onChange={(value) => setDraftFilters({ ...draftFilters, category_id: value })} placeholder="All categories" searchPlaceholder="Search categories" /></label>
+          <label className="label">Brand<SearchableSelect className="mt-1" value={draftFilters.brand_id} options={[{ value: '', label: 'All brands' }, ...rowsOf(brands.data).map((brand) => ({ value: brand.id, label: nameOf(brand) }))]} onOpen={() => setBrandOptionsEnabled(true)} onChange={(value) => setDraftFilters({ ...draftFilters, brand_id: value })} placeholder="All brands" searchPlaceholder="Search brands" /></label>
           <div className="flex items-end gap-2"><button className="btn-primary" type="submit"><Search className="h-4 w-4" /> Apply</button><button className="btn-secondary px-3" type="button" onClick={clearFilters} aria-label="Clear filters"><X className="h-4 w-4" /></button></div>
         </form>
         <div className="mb-5 flex flex-wrap gap-2">
